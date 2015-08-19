@@ -34,8 +34,7 @@ public class MainSSLScan extends Application {
 	public void initRootLayout() throws IOException {
 		FXMLLoader loader = new FXMLLoader();
 
-		loader.setLocation(MainSSLScan.class
-				.getResource("adress/view/Root.fxml"));
+		loader.setLocation(MainSSLScan.class.getResource("adress/view/Root.fxml"));
 
 		rootPane = loader.load();
 		rootController = loader.getController();
@@ -43,6 +42,7 @@ public class MainSSLScan extends Application {
 		Scene rootScene = new Scene(rootPane);
 		primaryStage.setScene(rootScene);
 		rootController.setMainApp(this);
+
 		primaryStage.show();
 
 	}
@@ -54,4 +54,5 @@ public class MainSSLScan extends Application {
 	public Stage getPrimaryStage() {
 		return primaryStage;
 	}
+
 }

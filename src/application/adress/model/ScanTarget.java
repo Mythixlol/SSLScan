@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import sun.net.idn.Punycode;
 
 public class ScanTarget {
 
@@ -13,14 +12,13 @@ public class ScanTarget {
 	private StringProperty name;
 	private StringProperty ID;
 	private ArrayList<Result> results = new ArrayList<>();
-	private StringProperty punyCode;
+	private StringProperty URI;
 	boolean complete = false;
 
 	public ScanTarget(String URL) {
-		Punycode puny = new Punycode();
-
-		punyCode = new SimpleStringProperty();
+		URI = new SimpleStringProperty(URLEncoder.encode(URL));
 		this.URL = new SimpleStringProperty(URL);
+
 	}
 
 	public String getURL() {
