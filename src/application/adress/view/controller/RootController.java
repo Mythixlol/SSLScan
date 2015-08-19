@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -25,6 +26,8 @@ import javafx.util.Callback;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.examples.ToCSV;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import application.MainSSLScan;
 import application.adress.model.Api;
@@ -83,16 +86,23 @@ public class RootController {
 	}
 
 	private void startScan(ScanTarget target) {
-		System.out.println(target.getURL());
-		System.out.println(scanApi.fetchHostInformation(target.getURL(), false, true, false, null, null, true));
 
-		try {
-			Thread.sleep(10000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		JSONObject json = (scanApi.fetchHostInformation(target.getURL(), false, true, false, null, null, true));
+
+		System.out.println(json);
+
+		Iterator a = json.keys();
+
+		while (a.hasNext()) {
+			String value = a.next().toString();
+			try {
+				System.out.println(value + ": " + json.get(value));
+			} catch (JSONException e) {
+				System.out.println("Error");
+				// e.printStackTrace();
+			}
+
 		}
-		System.out.println(scanApi.fetchHostInformation(target.getURL(), false, false, false, null, null, true));
 	}
 
 	public void initController() {
