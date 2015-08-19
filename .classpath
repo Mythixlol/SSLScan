@@ -3,5 +3,17 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.fx.ide.jdt.core.JAVAFX_CONTAINER"/>
+	<classpathentry kind="lib" path="D:/coding/Java/workspace/SSLScan/org.json-20120521.jar"/>
+	<classpathentry kind="lib" path="D:/coding/Java/workspace/SSLScan/poi-3.13-beta1/poi-3.13-beta1-20150723.jar"/>
+	<classpathentry kind="lib" path="D:/coding/Java/workspace/SSLScan/poi-3.13-beta1/poi-examples-3.13-beta1-20150723.jar"/>
+	<classpathentry kind="lib" path="D:/coding/Java/workspace/SSLScan/poi-3.13-beta1/poi-excelant-3.13-beta1-20150723.jar"/>
+	<classpathentry kind="lib" path="D:/coding/Java/workspace/SSLScan/poi-3.13-beta1/poi-ooxml-3.13-beta1-20150723.jar"/>
+	<classpathentry kind="lib" path="D:/coding/Java/workspace/SSLScan/poi-3.13-beta1/poi-ooxml-schemas-3.13-beta1-20150723.jar"/>
+	<classpathentry kind="lib" path="D:/coding/Java/workspace/SSLScan/poi-3.13-beta1/poi-scratchpad-3.13-beta1-20150723.jar"/>
+	<classpathentry kind="lib" path="D:/coding/Java/workspace/SSLScan/poi-3.13-beta1/ooxml-lib/xmlbeans-2.6.0.jar"/>
+	<classpathentry kind="lib" path="D:/coding/Java/workspace/SSLScan/poi-3.13-beta1/lib/commons-codec-1.9.jar"/>
+	<classpathentry kind="lib" path="D:/coding/Java/workspace/SSLScan/poi-3.13-beta1/lib/commons-logging-1.1.3.jar"/>
+	<classpathentry kind="lib" path="D:/coding/Java/workspace/SSLScan/poi-3.13-beta1/lib/junit-4.12.jar"/>
+	<classpathentry kind="lib" path="D:/coding/Java/workspace/SSLScan/poi-3.13-beta1/lib/log4j-1.2.17.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
