@@ -34,7 +34,8 @@ public class MainSSLScan extends Application {
 	public void initRootLayout() throws IOException {
 		FXMLLoader loader = new FXMLLoader();
 
-		loader.setLocation(MainSSLScan.class.getResource("adress/view/Root.fxml"));
+		loader.setLocation(MainSSLScan.class
+				.getResource("adress/view/Root.fxml"));
 
 		rootPane = loader.load();
 		rootController = loader.getController();
