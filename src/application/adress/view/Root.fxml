@@ -18,9 +18,11 @@
                         <MenuItem fx:id="test" mnemonicParsing="false" onAction="#doTest" text="Test" />
                   </items>
                 </Menu>
-                <Menu mnemonicParsing="false" text="Edit">
+                <Menu mnemonicParsing="false" text="Scans">
                   <items>
-                    <MenuItem mnemonicParsing="false" text="Delete" />
+                    <MenuItem mnemonicParsing="false" onAction="#stopScans" text="StopScans" />
+                        <MenuItem mnemonicParsing="false" onAction="#scanAllTargets" text="scan all Targets" />
+                        <MenuItem mnemonicParsing="false" onAction="#scanSingleTarget" text="Scan Single Target" />
                   </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Help">
@@ -95,6 +97,7 @@
             <Button fx:id="btn_Import" layoutX="536.0" layoutY="1.0" mnemonicParsing="false" onAction="#importURL" text="Import..." />
             <TextField fx:id="textField_SingleURL" layoutX="2.0" layoutY="1.0" prefHeight="25.0" prefWidth="275.0" />
             <Button fx:id="btn_AddSingleURL" layoutX="277.0" layoutY="1.0" mnemonicParsing="false" onAction="#addSingleURL" prefHeight="25.0" prefWidth="34.0" text="+" />
+            <Button layoutX="426.0" layoutY="1.0" mnemonicParsing="false" onAction="#scanAllTargets" text="ScanAll" />
          </children></AnchorPane>
    </bottom>
 </BorderPane>

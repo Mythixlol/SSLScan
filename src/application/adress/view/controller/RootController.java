@@ -5,11 +5,18 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ListChangeListener.Change;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -39,6 +46,7 @@ import org.json.JSONObject;
 import application.MainSSLScan;
 import application.adress.model.Api;
 import application.adress.model.Result;
+import application.adress.model.RunningScans;
 import application.adress.model.ScanTarget;
 
 public class RootController {
@@ -62,10 +70,13 @@ public class RootController {
 	private ArrayList<ScanTarget> urls = new ArrayList<>();
 	private ObservableList<ScanTarget> scanTargets = FXCollections.observableArrayList(urls);
 	private ContextMenu contextMenu = new ContextMenu();
-	private Object[] threads = new Object[5];
+	private int threads = 5;
 	private ObservableList<ScanTarget> runningScans = FXCollections.observableArrayList();
 	private Api scanApi = new Api();
 	private ScanTarget selectedTarget;
+	private RunningScans distributor;
+	private int currentThread = 0;
+	private boolean run;
 
 	// ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -97,6 +108,7 @@ public class RootController {
 	public void initController() {
 		listView_ScanTarget.setOnMouseClicked(mouseEvent);
 		runningScans.addListener(changeListener);
+		distributor = new RunningScans();
 
 		setContextmenu();
 	}
@@ -109,7 +121,7 @@ public class RootController {
 		MenuItem item = (MenuItem) event.getSource();
 
 		if (item.getId().equals("startScan")) {
-			startScan(listView_ScanTarget.getSelectionModel().getSelectedItem());
+			startSingleScan(selectedTarget);
 		} else if (item.getId().equals("stopScan")) {
 
 		}
@@ -120,9 +132,11 @@ public class RootController {
 
 		Node n = (Node) event.getSource();
 
-		if (n.getId().equals("targetCell") || event.isSecondaryButtonDown()) {
-			ScanTarget scanTarget = (ScanTarget) n.getUserData();
+		if ("targetCell".equals(n.getId())) {
+
+			ScanTarget scanTarget = listView_ScanTarget.getSelectionModel().getSelectedItem();
 			displayDetails(scanTarget);
+			selectedTarget = scanTarget;
 		}
 
 	}
@@ -130,92 +144,226 @@ public class RootController {
 	private void handleListChangeEvent(Change<? extends ScanTarget> event) {
 
 		while (event.next()) {
-			ScanTarget target;
+
+			if (event.wasAdded()) {
+
+			}
 			if (event.wasRemoved()) {
-				target = event.getRemoved().get(0);
-				startScan(target);
-				event.getRemoved().remove(0);
 
 			}
 		}
 	}
 
 	// ////////////////////////////////////////////////////////////////////////////
+	// Visuals
+	// /////////////////////////////////////////////////////////////////////////
+
+	private void setContextmenu() {
+
+		MenuItem startScanItem = new MenuItem("Scan");
+		startScanItem.setId("startScan");
+		startScanItem.setOnAction(actionEvent);
+
+		contextMenu.getItems().add(startScanItem);
+	}
+
+	private void displayDetails(ScanTarget target) {
+		// TODO Auto-generated method stub
+
+	}
+
+	// ////////////////////////////////////////////////////////////////////////////
 	// scans
 	// /////////////////////////////////////////////////////////////////////////
-	private ScanTarget startScan(ScanTarget target) {
 
-		Pane progressPane = createThreadViewBox();
-		runningScans.add(target);
+	public ScanTarget startScan(ScanTarget target) {
 
 		String URL = target.getURI();
 
-		Thread scanHost = new Thread(new Runnable() {
+		boolean isPublic = false;
+		boolean startNewScan = true;
+		boolean fromCache = false;
+		boolean certMissMatch = true;
 
-			boolean isPublic = false;
-			boolean startNewScan = true;
-			boolean fromCache = false;
-			boolean certMissMatch = true;
+		JSONObject hostInformation = (scanApi.fetchHostInformation(URL, isPublic, startNewScan, fromCache, null, null, certMissMatch));
 
+		target.setRawHostInformation(hostInformation);
+
+		fetchStatus(target);
+
+		return target;
+
+	}
+
+	public void startSingleScan(ScanTarget target) {
+		run = true;
+
+		VBox box = new VBox();
+		Label thread = new Label("SingleScan:");
+		TextField urllbl = new TextField(target.getURL());
+		urllbl.setEditable(false);
+		box.getChildren().add(thread);
+		box.getChildren().add(urllbl);
+
+		vBox_Thread.getChildren().add(box);
+
+		Service scanService = new Service() {
 			@Override
-			public void run() {
-				JSONObject hostInformation = (scanApi.fetchHostInformation(URL, isPublic, startNewScan, fromCache, null, null, certMissMatch));
+			protected Task createTask() {
 
-				target.setRawHostInformation(hostInformation);
+				return new Task() {
+					@Override
+					protected Object call() throws Exception {
+
+						startScan(target);
+						target.setComplete(true);
+						return null;
+					}
+				};
 			}
-		});
+		};
 
-		scanHost.start();
+		scanService.restart();
 
-		Thread fetchStatus = new Thread(new Runnable() {
+	}
 
-			JSONObject hostInformation;
+	public void stopScans() {
+		run = false;
+	}
 
-			@Override
-			public void run() {
+	public void scanSingleTarget() {
+		startSingleScan(selectedTarget);
+	}
 
-				try {
-					scanHost.join();
-				} catch (InterruptedException e1) {
+	public void scanAllTargets() {
+		distributeTargets();
+		run = true;
+		scanAll();
+	}
 
-					e1.printStackTrace();
-					System.out.println("fetchStatusError");
+	private void distributeTargets() {
+
+		runningScans.addAll(scanTargets);
+
+		for (int i = 0; i < threads; i++) {
+
+			ObservableList<ScanTarget> running = FXCollections.observableArrayList();
+
+			for (ScanTarget target : scanTargets) {
+				if (!running.contains(target)) {
+					if (target.getThread() == -1) {
+						if (scanTargets.indexOf(target) % 5 == i) {
+							target.setThread(i);
+							running.add(target);
+						}
+					} else {
+						continue;
+					}
 				}
+			}
 
-				String status = null;
+			running.addListener(changeListener);
+			distributor.addNewScans(running, i);
 
-				do {
+		}
 
-					hostInformation = (scanApi.fetchHostInformation(URL, false, false, false, null, null, true));
-					target.setRawHostInformation(hostInformation);
-					try {
-						status = (hostInformation.getString("status"));
+	}
 
-					} catch (JSONException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+	public void scanAll() {
+
+		Iterator targetIter = runningScans.iterator();
+
+		for (int i = 0; i < threads; i++) {
+			currentThread = i;
+
+			TextField urllbl = new TextField();
+			urllbl.setEditable(false);
+			StringProperty url = new SimpleStringProperty();
+			url.addListener(new ChangeListener<String>() {
+
+				@Override
+				public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+					if (newValue == null) {
+						urllbl.setText("Idle");
 					}
 
-					// testIt
+				}
+			});
+			VBox box = new VBox();
 
-					target.setStatus(status);
-					System.out.println(status);
-				} while (!status.equals("READY") && !status.equals("ERROR"));
+			Label thread = new Label("Scan #" + currentThread);
+			box.getChildren().add(thread);
 
-				fetchResult(target, scanApi.fetchHostInformation(URL, false, false, false, null, null, true));
+			box.getChildren().add(urllbl);
+			vBox_Thread.getChildren().add(box);
 
+			Service scanService = new Service() {
+
+				@Override
+				protected Task createTask() {
+					// TODO Auto-generated method stub
+					return new Task() {
+
+						@Override
+						protected Object call() throws Exception {
+							final int a = currentThread;
+							while (targetIter.hasNext()) {
+								if (!run) {
+									break;
+								}
+
+								ScanTarget t = (ScanTarget) targetIter.next();
+								startScan(t);
+								t.setComplete(true);
+								updateValue(t.getURL());
+
+							}
+
+							return null;
+						}
+
+					};
+				}
+
+			};
+
+			scanService.restart();
+
+			urllbl.textProperty().bind(scanService.valueProperty().asString());
+
+		}
+
+	}
+
+	public ScanTarget fetchStatus(ScanTarget target) {
+		String status = null;
+		String URL = target.getURI();
+
+		boolean isPublic = false;
+		boolean startNewScan = false;
+		boolean fromCache = false;
+		boolean certMissMatch = true;
+		JSONObject hostInformation = null;
+		do {
+
+			hostInformation = (scanApi.fetchHostInformation(URL, isPublic, startNewScan, fromCache, null, null, certMissMatch));
+			target.setRawHostInformation(hostInformation);
+			try {
+				status = (hostInformation.getString("status"));
+
+			} catch (JSONException e) {
+				System.out.println("KEIN STATUS " + target.getThread() + "  weiter");
 			}
-		});
 
-		fetchStatus.start();
+			// testIt
 
-		/*
-		 * fetchStatusCodes() : statusDetails
-		 * 
-		 * fetchHostInformation() : engineVersion, protocol, criteriaVersion, port, host, isPublic, startTime, statusMessage, status
-		 */
-		ObservableList<ScanTarget> list = (ObservableList<ScanTarget>) threads[target.getThread()];
-		list.remove(target);
+			target.setStatus(status);
+
+		} while (status != null && !status.equals("READY") && !status.equals("ERROR"));
+
+		System.out.println(hostInformation);
+
+		fetchResult(target, scanApi.fetchHostInformation(URL, isPublic, startNewScan, fromCache, null, null, certMissMatch));
 		return target;
 
 	}
@@ -243,32 +391,16 @@ public class RootController {
 
 			e.printStackTrace();
 		}
-
+		System.out.println("done:  " + target.getURL());
 	}
 
 	private void createResults(ScanTarget target, JSONObject object) {
 
 		for (String ip : target.getIPs()) {
-			target.addResult(new Result(scanApi.fetchEndpointData(target.getURI(), ip, false)));
+			Result result = new Result(scanApi.fetchEndpointData(target.getURI(), ip, false));
+			target.addResult(result);
+			target.addLastRecent(ip, result);
 		}
-
-	}
-
-	private void setContextmenu() {
-
-		MenuItem startScanItem = new MenuItem("Scan");
-		startScanItem.setId("startScan");
-		startScanItem.setOnAction(actionEvent);
-
-		MenuItem stopScanItem = new MenuItem("Scan");
-		stopScanItem.setId("startScan");
-		stopScanItem.setOnAction(actionEvent);
-
-		contextMenu.getItems().add(startScanItem);
-	}
-
-	private void displayDetails(ScanTarget target) {
-		// TODO Auto-generated method stub
 
 	}
 
@@ -302,8 +434,8 @@ public class RootController {
 			public ListCell<ScanTarget> call(ListView<ScanTarget> cell) {
 
 				TargetCell tCell = new TargetCell(contextMenu);
-				cell.setOnMouseClicked(mouseEvent);
 
+				tCell.setOnMouseClicked(mouseEvent);
 				return tCell;
 			}
 		});
@@ -395,22 +527,25 @@ public class RootController {
 
 	}
 
-	public void scanAll() {
+	public void export() {
 
-		for (int i = 0; i < threads.length; i++) {
-			ObservableList<ScanTarget> running = FXCollections.observableArrayList();
+	}
 
-			for (ScanTarget target : scanTargets) {
-				if (scanTargets.indexOf(target) % i == 0) {
-					running.add(target);
-					target.setThread(i);
-				}
-			}
+	public void exportResults(Result result) {
 
-			running.addListener(changeListener);
-			threads[i] = running;
+		FileChooser fileChooser = new FileChooser();
+		FileChooser.ExtensionFilter extFilterXLS = new FileChooser.ExtensionFilter("Excel files (*.xls)", "*.xls");
+		FileChooser.ExtensionFilter extFilterXLSX = new FileChooser.ExtensionFilter("Excel files (*.xlsx)", "*.xlsx");
+		fileChooser.getExtensionFilters().addAll(extFilterXLSX, extFilterXLS);
 
+		File f = fileChooser.showSaveDialog(app.getPrimaryStage());
+
+		if (f == null) {
+			return;
 		}
+
+		else
+			System.out.println(f.getAbsolutePath());
 	}
 
 	/*
@@ -444,6 +579,7 @@ public class RootController {
 
 				}
 				setContextMenu(c);
+				setId("targetCell");
 			} catch (Exception e) {
 
 			}
@@ -455,6 +591,7 @@ public class RootController {
 
 	public void doTest() {
 		// createThreadViewBox();
+		exportResults(new Result());
 
 	}
 

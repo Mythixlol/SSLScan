@@ -2,6 +2,8 @@ package application.adress.model;
 
 import java.net.IDN;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -11,37 +13,37 @@ import org.json.JSONObject;
 public class ScanTarget {
 
 	private ArrayList<String> IPs;
-	private StringProperty URL;
 	private ArrayList<Result> results;
+	private Map<String, Result> lastRecentResult;
+
+	private StringProperty URL;
 	private StringProperty URI;
-	boolean complete = false;
 	private StringProperty status;
+
 	private JSONObject rawHostInformation;
+
 	private int thread;
-
-	public int getThread() {
-		return thread;
-	}
-
-	public void setThread(int thread) {
-		this.thread = thread;
-	}
-
-	public JSONObject getRawHostInformation() {
-		return rawHostInformation;
-	}
-
-	public void setRawHostInformation(JSONObject rawHostInformation) {
-		this.rawHostInformation = rawHostInformation;
-	}
+	boolean complete = false;
 
 	public ScanTarget(String URL) {
+		thread = -1;
 		this.status = new SimpleStringProperty("SLEEP");
 		this.URL = new SimpleStringProperty(URL);
 		this.URI = new SimpleStringProperty(IDN.toASCII(URL));
 		this.IPs = new ArrayList<>();
 		this.results = new ArrayList<>();
+		this.lastRecentResult = new HashMap<>();
 
+	}
+
+	public Result addLastRecent(String ip, Result result) {
+		Result oldValue = lastRecentResult.put(ip, result);
+		return oldValue;
+
+	}
+
+	public Map<String, Result> getLastRecentResults() {
+		return lastRecentResult;
 	}
 
 	public String getStatus() {
@@ -88,6 +90,22 @@ public class ScanTarget {
 
 	public boolean isComplete() {
 		return complete;
+	}
+
+	public int getThread() {
+		return thread;
+	}
+
+	public void setThread(int thread) {
+		this.thread = thread;
+	}
+
+	public JSONObject getRawHostInformation() {
+		return rawHostInformation;
+	}
+
+	public void setRawHostInformation(JSONObject rawHostInformation) {
+		this.rawHostInformation = rawHostInformation;
 	}
 
 }

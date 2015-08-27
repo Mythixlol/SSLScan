@@ -11,6 +11,7 @@ public class Result {
 
 	// rawData
 	JSONObject result;
+	Date date; 						// date of the Scan
 
 	// arrays
 	JSONObject details;				// details of the Result
@@ -18,42 +19,51 @@ public class Result {
 	JSONArray protocols; 			// protocols of the given IP
 	JSONObject certificate;
 
-	// Details
-	Date date; 						// date of the Scan
-	String IP; 						// IP of the result
-	String ServerName; 				// server Name
+	// common
+	String duration; 				// duration of the scan
 	String grade; 					// grade of Scan
 	String gradeTrustIgnored; 		// grade without Certificate
-	String fallBackScv; 			// Downgrade prevention TLS_FALLBACK_SCSV (Signaling Cipher Suite Value)
-	String hasScSV;
-	String beastVuln; 				// has BEAST vulnerability?
-	String poodleTLS;				// Has POODLE vulnerability against TLS?
-	String poodleVuln; 				// has POODLE vulnerabilty against SSL
-	String heartBleed; 				// has HEARTBLEED vulnerability
-	String heartBeat;				// has HEARTBEAT vulnerability
-	String logJam; 					// has LOGJAM vulnerability
-	String supportRC4; 				// server supports RC4 negotiation
-	String freakVuln; 				// has FREAK vulnerability
-	String openSSLCcs; 				// has an OPEN SSL Certificate
-	String forwardSecrecy; 			// supports Forwared Secrey
-	String renegSupport; 			// supports secure Renogotiation
-	String DHYreUse;				// DH public server param (Ys) reuse
-	String duration; 				// duration of the scan
+	String IP; 						// IP of the result
+	String ServerName; 				// server Name
+
+	// suite
 	String anonSuite;				// anonymous Suites
-	String tlsCompression;			// TLS Compression enabled
-	boolean isTrustet; 				// isCertificate Trusted
-	String notTrustedReason; 		// reasen if not trusted
+
+	// protocol
 	String ssl2;					// SSL2
 	String ssl3;					// SSL3
 	String tls10;					// TSL1.0
 	String tls11;					// TLS1.1
 	String tls12;					// TLS1.2
 
+	// certificate
+	String isTrustet; 				// isCertificate Trusted
+	String notTrustedReason; 		// reasen if not trusted
+
+	// Details
+	boolean DHYreUse;				// DH public server param (Ys) reuse
+	boolean fallBackScv; 			// Downgrade prevention TLS_FALLBACK_SCSV (Signaling Cipher Suite Value)
+	int hasSct;
+	boolean beastVuln; 				// has BEAST vulnerability?
+	int poodleTLS;				// Has POODLE vulnerability against TLS?
+	boolean poodleVuln; 				// has POODLE vulnerabilty against SSL
+	boolean heartBleed; 				// has HEARTBLEED vulnerability
+	boolean heartBeat;				// has HEARTBEAT vulnerability
+	boolean logJam; 					// has LOGJAM vulnerability
+	boolean supportRC4; 				// server supports RC4 negotiation
+	boolean freakVuln; 				// has FREAK vulnerability
+	int openSSLCcs; 				// has an OPEN SSL Certificate
+	int forwardSecrecy; 			// supports Forwared Secrey
+	int renegSupport; 			// supports secure Renogotiation
+	String tlsCompression;			// TLS Compression enabled
+
 	public Result(JSONObject result) {
 		this.date = new Date(Long.parseLong("1440160623624"));
 		this.result = result;
 
+		System.out.println(result);
 		try {
+			setCommonFacts();
 			setDetails();
 			setSuites();
 			setCertificate();
@@ -61,6 +71,19 @@ public class Result {
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
+
+	}
+
+	private void setCommonFacts() throws JSONException {
+		grade = result.getString("grade");
+		gradeTrustIgnored = result.getString("gradeTrustIgnored");
+		duration = result.getString("duration");
+		IP = result.getString("iPAddress");
+		ServerName = result.getString("serverName");
+
+	}
+
+	public Result() {
 
 	}
 
@@ -75,7 +98,7 @@ public class Result {
 		ArrayList<String> supportedProtocols = new ArrayList<>();
 		for (int i = 0; i < protocols.length(); i++) {
 			supportedProtocols.add(protocols.getJSONObject(i).get("id").toString());
-			System.out.println(protocols.getJSONObject(i).get("id").toString());
+
 		}
 
 		ssl2 = (supportedProtocols.contains("512")) ? "Ja" : "Nein";
@@ -95,6 +118,21 @@ public class Result {
 	private void setDetails() throws JSONException {
 
 		details = result.getJSONObject("details");
+
+		DHYreUse = details.getBoolean("dhYsReuse");
+		fallBackScv = details.getBoolean("fallbackScsv");
+		hasSct = details.getInt("hasSct");
+		beastVuln = details.getBoolean("vulnBeast");
+		poodleTLS = details.getInt("poodleTls");
+		poodleVuln = details.getBoolean("poodle");
+		heartBleed = details.getBoolean("hearbleed");
+		heartBeat = details.getBoolean("heartbeat");
+		logJam = details.getBoolean("logjam");
+		supportRC4 = details.getBoolean("supportsRc4");
+		freakVuln = details.getBoolean("freak");
+		openSSLCcs = details.getInt("openSslCcs");
+		forwardSecrecy = details.getInt("forwardSecrecy");
+		renegSupport = details.getInt("renegSupport");
 
 	}
 
@@ -134,56 +172,204 @@ public class Result {
 		return gradeTrustIgnored;
 	}
 
-	public String getFallBackServerCert() {
+	public JSONObject getCertificate() {
+		return certificate;
+	}
+
+	public void setCertificate(JSONObject certificate) {
+		this.certificate = certificate;
+	}
+
+	public String getIsTrustet() {
+		return isTrustet;
+	}
+
+	public void setIsTrustet(String isTrustet) {
+		this.isTrustet = isTrustet;
+	}
+
+	public boolean isDHYreUse() {
+		return DHYreUse;
+	}
+
+	public void setDHYreUse(boolean dHYreUse) {
+		DHYreUse = dHYreUse;
+	}
+
+	public boolean isFallBackScv() {
 		return fallBackScv;
 	}
 
-	public String getBeastVuln() {
+	public void setFallBackScv(boolean fallBackScv) {
+		this.fallBackScv = fallBackScv;
+	}
+
+	public int getHasSct() {
+		return hasSct;
+	}
+
+	public void setHasSct(int hasSct) {
+		this.hasSct = hasSct;
+	}
+
+	public boolean isBeastVuln() {
 		return beastVuln;
 	}
 
-	public String getPoodleTLS() {
+	public void setBeastVuln(boolean beastVuln) {
+		this.beastVuln = beastVuln;
+	}
+
+	public int getPoodleTLS() {
 		return poodleTLS;
 	}
 
-	public String getPoodleVuln() {
+	public void setPoodleTLS(int poodleTLS) {
+		this.poodleTLS = poodleTLS;
+	}
+
+	public boolean isPoodleVuln() {
 		return poodleVuln;
 	}
 
-	public String getHeartBleed() {
+	public void setPoodleVuln(boolean poodleVuln) {
+		this.poodleVuln = poodleVuln;
+	}
+
+	public boolean isHeartBleed() {
 		return heartBleed;
 	}
 
-	public String getHeartBeat() {
+	public void setHeartBleed(boolean heartBleed) {
+		this.heartBleed = heartBleed;
+	}
+
+	public boolean isHeartBeat() {
 		return heartBeat;
 	}
 
-	public String getLogJam() {
+	public void setHeartBeat(boolean heartBeat) {
+		this.heartBeat = heartBeat;
+	}
+
+	public boolean isLogJam() {
 		return logJam;
 	}
 
-	public String getSupportRC4() {
+	public void setLogJam(boolean logJam) {
+		this.logJam = logJam;
+	}
+
+	public boolean isSupportRC4() {
 		return supportRC4;
 	}
 
-	public String getFreakVuln() {
+	public void setSupportRC4(boolean supportRC4) {
+		this.supportRC4 = supportRC4;
+	}
+
+	public boolean isFreakVuln() {
 		return freakVuln;
 	}
 
-	public String getOpenSSLCcs() {
+	public void setFreakVuln(boolean freakVuln) {
+		this.freakVuln = freakVuln;
+	}
+
+	public int getOpenSSLCcs() {
 		return openSSLCcs;
 	}
 
-	public String getForwardSecrecy() {
+	public void setOpenSSLCcs(int openSSLCcs) {
+		this.openSSLCcs = openSSLCcs;
+	}
+
+	public int getForwardSecrecy() {
 		return forwardSecrecy;
 	}
 
-	public String getRenegSupport() {
+	public void setForwardSecrecy(int forwardSecrecy) {
+		this.forwardSecrecy = forwardSecrecy;
+	}
+
+	public int getRenegSupport() {
 		return renegSupport;
 	}
 
-	public String getDHYreUse() {
-		return DHYreUse;
+	public void setRenegSupport(int renegSupport) {
+		this.renegSupport = renegSupport;
+	}
+
+	public void setResult(JSONObject result) {
+		this.result = result;
+	}
+
+	public void setDate(Date date) {
+		this.date = date;
+	}
+
+	public void setDetails(JSONObject details) {
+		this.details = details;
+	}
+
+	public void setSuits(JSONObject suits) {
+		this.suits = suits;
+	}
+
+	public void setProtocols(JSONArray protocols) {
+		this.protocols = protocols;
+	}
+
+	public void setDuration(String duration) {
+		this.duration = duration;
+	}
+
+	public void setGrade(String grade) {
+		this.grade = grade;
+	}
+
+	public void setGradeTrustIgnored(String gradeTrustIgnored) {
+		this.gradeTrustIgnored = gradeTrustIgnored;
+	}
+
+	public void setIP(String iP) {
+		IP = iP;
+	}
+
+	public void setServerName(String serverName) {
+		ServerName = serverName;
+	}
+
+	public void setAnonSuite(String anonSuite) {
+		this.anonSuite = anonSuite;
+	}
+
+	public void setSsl2(String ssl2) {
+		this.ssl2 = ssl2;
+	}
+
+	public void setSsl3(String ssl3) {
+		this.ssl3 = ssl3;
+	}
+
+	public void setTls10(String tls10) {
+		this.tls10 = tls10;
+	}
+
+	public void setTls11(String tls11) {
+		this.tls11 = tls11;
+	}
+
+	public void setTls12(String tls12) {
+		this.tls12 = tls12;
+	}
+
+	public void setNotTrustedReason(String notTrustedReason) {
+		this.notTrustedReason = notTrustedReason;
+	}
+
+	public void setTlsCompression(String tlsCompression) {
+		this.tlsCompression = tlsCompression;
 	}
 
 	public String getDuration() {
@@ -198,7 +384,7 @@ public class Result {
 		return tlsCompression;
 	}
 
-	public boolean isTrustet() {
+	public String isTrustet() {
 		return isTrustet;
 	}
 
