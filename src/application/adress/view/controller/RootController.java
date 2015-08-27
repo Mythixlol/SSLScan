@@ -67,14 +67,19 @@ public class RootController {
 
 	// ///////////////////////////////////////////////////////////////////////////////////////////////
 	private MainSSLScan app;
+	private Api scanApi = new Api();
+	private RunningScans distributor;
+
 	private ArrayList<ScanTarget> urls = new ArrayList<>();
+	private ArrayList<ScanTarget> scannedTargets = new ArrayList<>();
 	private ObservableList<ScanTarget> scanTargets = FXCollections.observableArrayList(urls);
+	private ObservableList<ScanTarget> runningScans = FXCollections.observableArrayList();
+
 	private ContextMenu contextMenu = new ContextMenu();
 	private int threads = 5;
-	private ObservableList<ScanTarget> runningScans = FXCollections.observableArrayList();
-	private Api scanApi = new Api();
+
 	private ScanTarget selectedTarget;
-	private RunningScans distributor;
+
 	private int currentThread = 0;
 	private boolean run;
 
@@ -395,13 +400,12 @@ public class RootController {
 	}
 
 	private void createResults(ScanTarget target, JSONObject object) {
-
+		scannedTargets.add(target);
 		for (String ip : target.getIPs()) {
 			Result result = new Result(scanApi.fetchEndpointData(target.getURI(), ip, false));
 			target.addResult(result);
 			target.addLastRecent(ip, result);
 		}
-
 	}
 
 	public void importURL() {
@@ -531,7 +535,7 @@ public class RootController {
 
 	}
 
-	public void exportResults(Result result) {
+	public void exportResults() {
 
 		FileChooser fileChooser = new FileChooser();
 		FileChooser.ExtensionFilter extFilterXLS = new FileChooser.ExtensionFilter("Excel files (*.xls)", "*.xls");
@@ -545,7 +549,13 @@ public class RootController {
 		}
 
 		else
-			System.out.println(f.getAbsolutePath());
+			for (ScanTarget scanTarget : scannedTargets) {
+
+				for (String ip : scanTarget.getIPs()) {
+					Result result = scanTarget.getLastRecentResults().get(ip);
+				}
+
+			}
 	}
 
 	/*
@@ -590,8 +600,8 @@ public class RootController {
 	MenuItem test;
 
 	public void doTest() {
-		// createThreadViewBox();
-		exportResults(new Result());
+
+		exportResults(null);
 
 	}
 

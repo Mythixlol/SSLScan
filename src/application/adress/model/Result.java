@@ -37,7 +37,7 @@ public class Result {
 	String tls12;					// TLS1.2
 
 	// certificate
-	String isTrustet; 				// isCertificate Trusted
+	String isTrusted; 				// isCertificate Trusted
 	String notTrustedReason; 		// reasen if not trusted
 
 	// Details
@@ -55,7 +55,7 @@ public class Result {
 	int openSSLCcs; 				// has an OPEN SSL Certificate
 	int forwardSecrecy; 			// supports Forwared Secrey
 	int renegSupport; 			// supports secure Renogotiation
-	String tlsCompression;			// TLS Compression enabled
+	int tlsCompression;			// TLS Compression enabled
 
 	public Result(JSONObject result) {
 		this.date = new Date(Long.parseLong("1440160623624"));
@@ -83,12 +83,10 @@ public class Result {
 
 	}
 
-	public Result() {
-
-	}
-
 	private void setCertificate() throws JSONException {
 		certificate = details.getJSONObject("cert");
+
+		isTrusted = (grade.equals("M")) ? "Ja" : "Nein";
 
 	}
 
@@ -113,6 +111,19 @@ public class Result {
 
 		suits = details.getJSONObject("suites");
 
+		anonSuite = "Nein";
+		JSONArray list = suits.getJSONArray("list");
+		for (int i = 0; i < list.length(); i++) {
+			JSONObject suit = list.getJSONObject(0);
+			String name = suit.getString("name");
+			name.toLowerCase();
+			if (name.contains("anon")) {
+				anonSuite = "Ja";
+				break;
+			}
+
+		}
+
 	}
 
 	private void setDetails() throws JSONException {
@@ -133,11 +144,15 @@ public class Result {
 		openSSLCcs = details.getInt("openSslCcs");
 		forwardSecrecy = details.getInt("forwardSecrecy");
 		renegSupport = details.getInt("renegSupport");
-
+		tlsCompression = details.getInt("compressionMethods");
 	}
 
 	public JSONObject getResult() {
 		return result;
+	}
+
+	public Date getDate() {
+		return date;
 	}
 
 	public JSONObject getDetails() {
@@ -152,16 +167,12 @@ public class Result {
 		return protocols;
 	}
 
-	public Date getDate() {
-		return date;
+	public JSONObject getCertificate() {
+		return certificate;
 	}
 
-	public String getIP() {
-		return IP;
-	}
-
-	public String getServerName() {
-		return ServerName;
+	public String getDuration() {
+		return duration;
 	}
 
 	public String getGrade() {
@@ -172,224 +183,16 @@ public class Result {
 		return gradeTrustIgnored;
 	}
 
-	public JSONObject getCertificate() {
-		return certificate;
+	public String getIP() {
+		return IP;
 	}
 
-	public void setCertificate(JSONObject certificate) {
-		this.certificate = certificate;
-	}
-
-	public String getIsTrustet() {
-		return isTrustet;
-	}
-
-	public void setIsTrustet(String isTrustet) {
-		this.isTrustet = isTrustet;
-	}
-
-	public boolean isDHYreUse() {
-		return DHYreUse;
-	}
-
-	public void setDHYreUse(boolean dHYreUse) {
-		DHYreUse = dHYreUse;
-	}
-
-	public boolean isFallBackScv() {
-		return fallBackScv;
-	}
-
-	public void setFallBackScv(boolean fallBackScv) {
-		this.fallBackScv = fallBackScv;
-	}
-
-	public int getHasSct() {
-		return hasSct;
-	}
-
-	public void setHasSct(int hasSct) {
-		this.hasSct = hasSct;
-	}
-
-	public boolean isBeastVuln() {
-		return beastVuln;
-	}
-
-	public void setBeastVuln(boolean beastVuln) {
-		this.beastVuln = beastVuln;
-	}
-
-	public int getPoodleTLS() {
-		return poodleTLS;
-	}
-
-	public void setPoodleTLS(int poodleTLS) {
-		this.poodleTLS = poodleTLS;
-	}
-
-	public boolean isPoodleVuln() {
-		return poodleVuln;
-	}
-
-	public void setPoodleVuln(boolean poodleVuln) {
-		this.poodleVuln = poodleVuln;
-	}
-
-	public boolean isHeartBleed() {
-		return heartBleed;
-	}
-
-	public void setHeartBleed(boolean heartBleed) {
-		this.heartBleed = heartBleed;
-	}
-
-	public boolean isHeartBeat() {
-		return heartBeat;
-	}
-
-	public void setHeartBeat(boolean heartBeat) {
-		this.heartBeat = heartBeat;
-	}
-
-	public boolean isLogJam() {
-		return logJam;
-	}
-
-	public void setLogJam(boolean logJam) {
-		this.logJam = logJam;
-	}
-
-	public boolean isSupportRC4() {
-		return supportRC4;
-	}
-
-	public void setSupportRC4(boolean supportRC4) {
-		this.supportRC4 = supportRC4;
-	}
-
-	public boolean isFreakVuln() {
-		return freakVuln;
-	}
-
-	public void setFreakVuln(boolean freakVuln) {
-		this.freakVuln = freakVuln;
-	}
-
-	public int getOpenSSLCcs() {
-		return openSSLCcs;
-	}
-
-	public void setOpenSSLCcs(int openSSLCcs) {
-		this.openSSLCcs = openSSLCcs;
-	}
-
-	public int getForwardSecrecy() {
-		return forwardSecrecy;
-	}
-
-	public void setForwardSecrecy(int forwardSecrecy) {
-		this.forwardSecrecy = forwardSecrecy;
-	}
-
-	public int getRenegSupport() {
-		return renegSupport;
-	}
-
-	public void setRenegSupport(int renegSupport) {
-		this.renegSupport = renegSupport;
-	}
-
-	public void setResult(JSONObject result) {
-		this.result = result;
-	}
-
-	public void setDate(Date date) {
-		this.date = date;
-	}
-
-	public void setDetails(JSONObject details) {
-		this.details = details;
-	}
-
-	public void setSuits(JSONObject suits) {
-		this.suits = suits;
-	}
-
-	public void setProtocols(JSONArray protocols) {
-		this.protocols = protocols;
-	}
-
-	public void setDuration(String duration) {
-		this.duration = duration;
-	}
-
-	public void setGrade(String grade) {
-		this.grade = grade;
-	}
-
-	public void setGradeTrustIgnored(String gradeTrustIgnored) {
-		this.gradeTrustIgnored = gradeTrustIgnored;
-	}
-
-	public void setIP(String iP) {
-		IP = iP;
-	}
-
-	public void setServerName(String serverName) {
-		ServerName = serverName;
-	}
-
-	public void setAnonSuite(String anonSuite) {
-		this.anonSuite = anonSuite;
-	}
-
-	public void setSsl2(String ssl2) {
-		this.ssl2 = ssl2;
-	}
-
-	public void setSsl3(String ssl3) {
-		this.ssl3 = ssl3;
-	}
-
-	public void setTls10(String tls10) {
-		this.tls10 = tls10;
-	}
-
-	public void setTls11(String tls11) {
-		this.tls11 = tls11;
-	}
-
-	public void setTls12(String tls12) {
-		this.tls12 = tls12;
-	}
-
-	public void setNotTrustedReason(String notTrustedReason) {
-		this.notTrustedReason = notTrustedReason;
-	}
-
-	public void setTlsCompression(String tlsCompression) {
-		this.tlsCompression = tlsCompression;
-	}
-
-	public String getDuration() {
-		return duration;
+	public String getServerName() {
+		return ServerName;
 	}
 
 	public String getAnonSuite() {
 		return anonSuite;
-	}
-
-	public String getTlsCompression() {
-		return tlsCompression;
-	}
-
-	public String isTrustet() {
-		return isTrustet;
-	}
-
-	public String getNotTrustedReason() {
-		return notTrustedReason;
 	}
 
 	public String getSsl2() {
@@ -410,6 +213,74 @@ public class Result {
 
 	public String getTls12() {
 		return tls12;
+	}
+
+	public String getIsTrusted() {
+		return isTrusted;
+	}
+
+	public String getNotTrustedReason() {
+		return notTrustedReason;
+	}
+
+	public boolean isDHYreUse() {
+		return DHYreUse;
+	}
+
+	public boolean isFallBackScv() {
+		return fallBackScv;
+	}
+
+	public int getHasSct() {
+		return hasSct;
+	}
+
+	public boolean isBeastVuln() {
+		return beastVuln;
+	}
+
+	public int getPoodleTLS() {
+		return poodleTLS;
+	}
+
+	public boolean isPoodleVuln() {
+		return poodleVuln;
+	}
+
+	public boolean isHeartBleed() {
+		return heartBleed;
+	}
+
+	public boolean isHeartBeat() {
+		return heartBeat;
+	}
+
+	public boolean isLogJam() {
+		return logJam;
+	}
+
+	public boolean isSupportRC4() {
+		return supportRC4;
+	}
+
+	public boolean isFreakVuln() {
+		return freakVuln;
+	}
+
+	public int getOpenSSLCcs() {
+		return openSSLCcs;
+	}
+
+	public int getForwardSecrecy() {
+		return forwardSecrecy;
+	}
+
+	public int getRenegSupport() {
+		return renegSupport;
+	}
+
+	public int getTlsCompression() {
+		return tlsCompression;
 	}
 
 }
