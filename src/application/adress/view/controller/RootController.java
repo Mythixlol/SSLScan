@@ -553,6 +553,11 @@ public class RootController {
 
 				for (String ip : scanTarget.getIPs()) {
 					Result result = scanTarget.getLastRecentResults().get(ip);
+
+					// doSthWith the Result in the File.
+					// handle this shit correctly
+					// vielleicht auslagern? Liste und File mitgeben. ist warhscheinlch einfacher
+
 				}
 
 			}
@@ -601,7 +606,7 @@ public class RootController {
 
 	public void doTest() {
 
-		exportResults(null);
+		exportResults();
 
 	}
 
