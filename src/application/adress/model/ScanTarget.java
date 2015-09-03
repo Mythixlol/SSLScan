@@ -19,6 +19,7 @@ public class ScanTarget {
 	private StringProperty URL;
 	private StringProperty URI;
 	private StringProperty status;
+	private StringProperty statusMessage;
 
 	private JSONObject rawHostInformation;
 
@@ -29,6 +30,7 @@ public class ScanTarget {
 		thread = -1;
 		this.status = new SimpleStringProperty("SLEEP");
 		this.URL = new SimpleStringProperty(URL);
+		this.statusMessage = new SimpleStringProperty();
 		this.URI = new SimpleStringProperty(IDN.toASCII(URL));
 		this.IPs = new ArrayList<>();
 		this.results = new ArrayList<>();
@@ -48,6 +50,14 @@ public class ScanTarget {
 
 	public String getStatus() {
 		return status.getValue();
+	}
+
+	public void setStatusMessage(String message) {
+		this.statusMessage.set(message);
+	}
+
+	public String getStatusMessage() {
+		return statusMessage.getValue();
 	}
 
 	public void setStatus(String newStatus) {

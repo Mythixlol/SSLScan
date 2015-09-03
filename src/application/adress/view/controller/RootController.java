@@ -45,9 +45,12 @@ import org.json.JSONObject;
 
 import application.MainSSLScan;
 import application.adress.model.Api;
+import application.adress.model.GetGeoLocation;
+import application.adress.model.ImportExport;
 import application.adress.model.Result;
-import application.adress.model.RunningScans;
 import application.adress.model.ScanTarget;
+
+import com.maxmind.geoip2.exception.GeoIp2Exception;
 
 public class RootController {
 	/*
@@ -64,11 +67,11 @@ public class RootController {
 	Button btn_AddSingleURL;
 	@FXML
 	TextField textField_SingleURL;
+	ArrayList<ArrayList<ScanTarget>> distibutedScans = new ArrayList<>();
 
 	// ///////////////////////////////////////////////////////////////////////////////////////////////
 	private MainSSLScan app;
 	private Api scanApi = new Api();
-	private RunningScans distributor;
 
 	private ArrayList<ScanTarget> urls = new ArrayList<>();
 	private ArrayList<ScanTarget> scannedTargets = new ArrayList<>();
@@ -81,7 +84,6 @@ public class RootController {
 	private ScanTarget selectedTarget;
 
 	private int currentThread = 0;
-	private boolean run;
 
 	// ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -113,7 +115,6 @@ public class RootController {
 	public void initController() {
 		listView_ScanTarget.setOnMouseClicked(mouseEvent);
 		runningScans.addListener(changeListener);
-		distributor = new RunningScans();
 
 		setContextmenu();
 	}
@@ -181,27 +182,7 @@ public class RootController {
 	// scans
 	// /////////////////////////////////////////////////////////////////////////
 
-	public ScanTarget startScan(ScanTarget target) {
-
-		String URL = target.getURI();
-
-		boolean isPublic = false;
-		boolean startNewScan = true;
-		boolean fromCache = false;
-		boolean certMissMatch = true;
-
-		JSONObject hostInformation = (scanApi.fetchHostInformation(URL, isPublic, startNewScan, fromCache, null, null, certMissMatch));
-
-		target.setRawHostInformation(hostInformation);
-
-		fetchStatus(target);
-
-		return target;
-
-	}
-
 	public void startSingleScan(ScanTarget target) {
-		run = true;
 
 		VBox box = new VBox();
 		Label thread = new Label("SingleScan:");
@@ -232,18 +213,13 @@ public class RootController {
 
 	}
 
-	public void stopScans() {
-		run = false;
-	}
-
 	public void scanSingleTarget() {
 		startSingleScan(selectedTarget);
 	}
 
 	public void scanAllTargets() {
 		distributeTargets();
-		run = true;
-		scanAll();
+		startScanAll();
 	}
 
 	private void distributeTargets() {
@@ -251,36 +227,30 @@ public class RootController {
 		runningScans.addAll(scanTargets);
 
 		for (int i = 0; i < threads; i++) {
-
-			ObservableList<ScanTarget> running = FXCollections.observableArrayList();
-
+			ArrayList<ScanTarget> dist = new ArrayList<ScanTarget>();
 			for (ScanTarget target : scanTargets) {
-				if (!running.contains(target)) {
-					if (target.getThread() == -1) {
-						if (scanTargets.indexOf(target) % 5 == i) {
-							target.setThread(i);
-							running.add(target);
-						}
-					} else {
-						continue;
+				if (target.getThread() == -1) {
+					if (scanTargets.indexOf(target) % 5 == i) {
+						target.setThread(i);
+						dist.add(target);
+
 					}
+				} else {
+					continue;
 				}
 			}
-
-			running.addListener(changeListener);
-			distributor.addNewScans(running, i);
-
+			distibutedScans.add(i, dist);
 		}
 
 	}
 
-	public void scanAll() {
-
-		Iterator targetIter = runningScans.iterator();
+	public void startScanAll() {
 
 		for (int i = 0; i < threads; i++) {
-			currentThread = i;
 
+			currentThread = i;
+			ArrayList<ScanTarget> listOfThread = distibutedScans.get(i);
+			Iterator<ScanTarget> targetIter = listOfThread.iterator();
 			TextField urllbl = new TextField();
 			urllbl.setEditable(false);
 			StringProperty url = new SimpleStringProperty();
@@ -313,17 +283,14 @@ public class RootController {
 						protected Object call() throws Exception {
 							final int a = currentThread;
 							while (targetIter.hasNext()) {
-								if (!run) {
-									break;
-								}
 
-								ScanTarget t = (ScanTarget) targetIter.next();
+								ScanTarget t = targetIter.next();
+								updateValue(t.getURL());
 								startScan(t);
 								t.setComplete(true);
-								updateValue(t.getURL());
 
 							}
-
+							// vBox_Thread.getChildren().remove(box);
 							return null;
 						}
 
@@ -340,6 +307,29 @@ public class RootController {
 
 	}
 
+	// ////////////////////////////////////////////////////////////////////////////
+	// scans
+	// /////////////////////////////////////////////////////////////////////////
+
+	public ScanTarget startScan(ScanTarget target) {
+
+		String URL = target.getURI();
+
+		boolean isPublic = false;
+		boolean startNewScan = true;
+		boolean fromCache = false;
+		boolean certMissMatch = true;
+
+		JSONObject hostInformation = (scanApi.fetchHostInformation(URL, isPublic, startNewScan, fromCache, null, null, certMissMatch));
+
+		target.setRawHostInformation(hostInformation);
+
+		fetchStatus(target);
+
+		return target;
+
+	}
+
 	public ScanTarget fetchStatus(ScanTarget target) {
 		String status = null;
 		String URL = target.getURI();
@@ -349,24 +339,24 @@ public class RootController {
 		boolean fromCache = false;
 		boolean certMissMatch = true;
 		JSONObject hostInformation = null;
+
 		do {
 
 			hostInformation = (scanApi.fetchHostInformation(URL, isPublic, startNewScan, fromCache, null, null, certMissMatch));
 			target.setRawHostInformation(hostInformation);
+
 			try {
 				status = (hostInformation.getString("status"));
 
 			} catch (JSONException e) {
-				System.out.println("KEIN STATUS " + target.getThread() + "  weiter");
+				// e.printStackTrace();
 			}
 
 			// testIt
 
 			target.setStatus(status);
 
-		} while (status != null && !status.equals("READY") && !status.equals("ERROR"));
-
-		System.out.println(hostInformation);
+		} while (status == null || (!status.equals("READY") && !status.equals("ERROR")));
 
 		fetchResult(target, scanApi.fetchHostInformation(URL, isPublic, startNewScan, fromCache, null, null, certMissMatch));
 		return target;
@@ -390,22 +380,32 @@ public class RootController {
 
 				createResults(target, object);
 
-			}
+			} else if (target.getStatus().equalsIgnoreCase("error")) {
 
+				Result r = new Result();
+				target.addResult(r);
+				scannedTargets.add(target);
+				System.out.println("ERROR:    " + target.getURI() + "   " + target.getStatus());
+
+			} else {
+				System.out.println("fehlt was:    " + target.getURI() + "   " + target.getStatus());
+			}
 		} catch (JSONException e) {
 
 			e.printStackTrace();
 		}
-		System.out.println("done:  " + target.getURL());
+
 	}
 
 	private void createResults(ScanTarget target, JSONObject object) {
 		scannedTargets.add(target);
 		for (String ip : target.getIPs()) {
 			Result result = new Result(scanApi.fetchEndpointData(target.getURI(), ip, false));
+			result.setIP(ip);
 			target.addResult(result);
 			target.addLastRecent(ip, result);
 		}
+
 	}
 
 	public void importURL() {
@@ -447,24 +447,25 @@ public class RootController {
 	}
 
 	public void parseFile(File importFile) throws IOException, IllegalArgumentException, InvalidFormatException {
-		File csvFile = new File(importFile.getParent() + "\\csvImport.csv");
-		csvFile.createNewFile();
-		String extension = importFile.getName().substring(importFile.getName().lastIndexOf(".") + 1);
 
+		String extension = importFile.getName().substring(importFile.getName().lastIndexOf(".") + 1);
+		String csv = importFile.getAbsolutePath().substring(0, importFile.getAbsolutePath().lastIndexOf(".")) + ".csv";
 		ToCSV toCSV = new ToCSV();
 		switch (extension) {
 		case "xls": {
+
 			toCSV.convertExcelToCSV(importFile.getPath(), importFile.getParent());
+			importFile = new File(csv);
 			break;
 		}
 		case "xlsx": {
 			toCSV.convertExcelToCSV(importFile.getPath(), importFile.getParent());
-
+			importFile = new File(csv);
 			break;
 		}
 
 		case "csv": {
-			csvFile = importFile;
+
 			break;
 		}
 
@@ -480,9 +481,12 @@ public class RootController {
 
 		String dataRow = CSVFile.readLine();
 		while (dataRow != null) {
-			String[] dataArray = dataRow.split(",");
-			if (dataArray[0] != null || !dataArray[0].equals("")) {
-				scanTargets.add(new ScanTarget(dataArray[0]));
+			if (!dataRow.isEmpty()) {
+
+				String[] dataArray = dataRow.split(",");
+				if (dataArray[0] != null || !dataArray[0].equals("")) {
+					scanTargets.add(new ScanTarget(dataArray[0]));
+				}
 			}
 			dataRow = CSVFile.readLine(); // Read next line of data.
 		}
@@ -539,8 +543,8 @@ public class RootController {
 
 		FileChooser fileChooser = new FileChooser();
 		FileChooser.ExtensionFilter extFilterXLS = new FileChooser.ExtensionFilter("Excel files (*.xls)", "*.xls");
-		FileChooser.ExtensionFilter extFilterXLSX = new FileChooser.ExtensionFilter("Excel files (*.xlsx)", "*.xlsx");
-		fileChooser.getExtensionFilters().addAll(extFilterXLSX, extFilterXLS);
+
+		fileChooser.getExtensionFilters().addAll(extFilterXLS);
 
 		File f = fileChooser.showSaveDialog(app.getPrimaryStage());
 
@@ -548,19 +552,10 @@ public class RootController {
 			return;
 		}
 
-		else
-			for (ScanTarget scanTarget : scannedTargets) {
+		else {
+			ImportExport.exportToExcelFile(scannedTargets, f);
 
-				for (String ip : scanTarget.getIPs()) {
-					Result result = scanTarget.getLastRecentResults().get(ip);
-
-					// doSthWith the Result in the File.
-					// handle this shit correctly
-					// vielleicht auslagern? Liste und File mitgeben. ist warhscheinlch einfacher
-
-				}
-
-			}
+		}
 	}
 
 	/*
@@ -578,26 +573,25 @@ public class RootController {
 
 		@Override
 		public void updateItem(ScanTarget target, boolean empty) {
-			try {
+			if (target == null || empty) {
+				return;
+			}
+			super.updateItem(target, empty);
+			super.setText(target.getURI());
+			if (target.getStatus().equals("IN_PROGRESS")) {
+				this.setStyle("-fx-background-color: yellow");
 
-				super.updateItem(target, empty);
-				super.setText(target.getURI());
-				if (target.getStatus().equals("IN_PROGRESS")) {
-					this.setStyle("-fx-background-color: yellow");
-
+			} else {
+				if (target.isComplete() && !empty) {
+					this.setStyle("-fx-background-color: lightgreen");
 				} else {
-					if (target.isComplete() && !empty) {
-						this.setStyle("-fx-background-color: lightgreen");
-					} else {
-						// this.setStyle("-fx-background-color: white");
-					}
-
+					// this.setStyle("-fx-background-color: white");
 				}
-				setContextMenu(c);
-				setId("targetCell");
-			} catch (Exception e) {
 
 			}
+			setContextMenu(c);
+			setId("targetCell");
+
 		}
 	}
 
@@ -606,8 +600,15 @@ public class RootController {
 
 	public void doTest() {
 
-		exportResults();
+		try {
+			GetGeoLocation.getGeoLocation("81.169.145.80");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (GeoIp2Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 	}
-
 }

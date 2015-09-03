@@ -16,11 +16,12 @@
                   <items>
                     <MenuItem mnemonicParsing="false" text="Close" />
                         <MenuItem fx:id="test" mnemonicParsing="false" onAction="#doTest" text="Test" />
+                        <MenuItem mnemonicParsing="false" onAction="#exportResults" text="Export" />
                   </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Scans">
                   <items>
-                    <MenuItem mnemonicParsing="false" onAction="#stopScans" text="StopScans" />
+                    <MenuItem mnemonicParsing="false" text="StopScans" />
                         <MenuItem mnemonicParsing="false" onAction="#scanAllTargets" text="scan all Targets" />
                         <MenuItem mnemonicParsing="false" onAction="#scanSingleTarget" text="Scan Single Target" />
                   </items>
