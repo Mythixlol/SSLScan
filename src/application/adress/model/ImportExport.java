@@ -114,7 +114,7 @@ public class ImportExport {
 				cell.setCellValue(r.getIP());
 
 				cell = row.createCell(i++);
-				cell.setCellValue("");
+				cell.setCellValue(r.getGeoLocation());
 
 				cell = row.createCell(i++);
 				cell.setCellValue(online);

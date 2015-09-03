@@ -402,6 +402,17 @@ public class RootController {
 		for (String ip : target.getIPs()) {
 			Result result = new Result(scanApi.fetchEndpointData(target.getURI(), ip, false));
 			result.setIP(ip);
+			String geoLoc = "";
+			try {
+				geoLoc = GetGeoLocation.getGeoLocation("81.169.145.80");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (GeoIp2Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			result.setGeoLocation(geoLoc);
 			target.addResult(result);
 			target.addLastRecent(ip, result);
 		}
@@ -599,16 +610,6 @@ public class RootController {
 	MenuItem test;
 
 	public void doTest() {
-
-		try {
-			GetGeoLocation.getGeoLocation("81.169.145.80");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (GeoIp2Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 
 	}
 }

@@ -26,6 +26,11 @@ public class Result {
 	String IP; // IP of the result
 	String ServerName; // server Name
 	String statusMessage; // statusMessage of the Scan
+	String geoLocation;
+
+	public String getGeoLocation() {
+		return geoLocation;
+	}
 
 	// suite
 	String anonSuite; // anonymous Suites
@@ -452,6 +457,11 @@ public class Result {
 
 	public void setIP(String ip) {
 		this.IP = ip;
+
+	}
+
+	public void setGeoLocation(String geoLoc) {
+		this.geoLocation = geoLoc;
 
 	}
 
